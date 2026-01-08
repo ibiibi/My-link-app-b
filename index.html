@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Links Pro - Cloud Sync</title>
+    
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js" async defer></script>
+    <meta name="theme-color" content="#6c5ce7">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236c5ce7'/><path d='M30 50 L70 50 M40 40 L40 60 M60 40 L60 60' stroke='white' stroke-width='8'/></svg>">
+
+    <style>
+        :root {
+            --primary: #6c5ce7;
+            --bg: #f8f9fa;
+            --card: rgba(255, 255, 255, 0.92);
+            --text: #2d3436;
+        }
+
+        .dark-mode {
+            --bg: #1e272e;
+            --card: rgba(45, 52, 54, 0.95);
+            --text: #f1f2f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg) url('https://uploads.onecompiler.io/447u3x4dy/4482ajbyx/1766067438317.jpg') no-repeat center center fixed;
+            background-size: cover;
+            color: var(--text);
+            margin: 0;
+            transition: 0.4s;
+            min-height: 100vh;
+        }
+
+        .top-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 20px; background: var(--card); backdrop-filter: blur(15px);
+            position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .container { padding: 20px; max-width: 500px; margin: auto; }
+
+        .search-bar {
+            width: 100%; padding: 12px 20px; border-radius: 30px; border: none;
+            background: var(--card); color: var(--text); margin-bottom: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); outline: none;
+        }
+
+        .link-card {
+            background: var(--card); backdrop-filter: blur(10px);
+            padding: 18px; border-radius: 15px; margin-bottom: 12px;
+            display: flex; justify-content: space-between; align-items: center;
+            border-left: 5px solid var(--primary); animation: slideIn 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .btn {
+            border: none; padding: 10px 18px; border-radius: 10px;
+            cursor: pointer; font-weight: bold; transition: 0.3s;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-cloud { background: #27ae60; color: white; width: 48%; }
+        .btn-restore { background: #e67e22; color: white; width: 48%; }
+
+        .icon-btn { font-size: 22px; cursor: pointer; }
+
+        .modal {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 1000;
+        }
+        .modal-content { 
+            background: var(--bg); padding: 25px; border-radius: 25px; 
+            width: 85%; max-width: 400px; text-align: center;
+        }
+
+        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; }
+    </style>
+</head>
+<body id="mainBody">
+
+    <div class="top-bar">
+        <div style="font-size: 1.5rem; font-weight: 900; color: var(--primary);">My Links 🔗</div>
+        <div style="display:flex; gap: 18px; align-items: center;">
+            <span onclick="toggleDarkMode()" title="Theme" class="icon-btn">🌓</span>
+            <label for="bgInput" title="Wallpaper" class="icon-btn">🖼️</label>
+            <input type="file" id="bgInput" style="display:none" accept="image/*" onchange="changeWallpaper(event)">
+            <span onclick="openModal('addModal')" title="Add Link" class="icon-btn">➕</span>
+            <span onclick="openModal('settingsModal')" title="Settings" class="icon-btn">⚙️</span>
+        </div>
+    </div>
+
+    <div class="container">
+        <div style="display:flex; justify-content: space-between; margin-bottom: 20px;">
+            <button class="btn btn-cloud" onclick="handleAuthClick('upload')">☁️ Backup</button>
+            <button class="btn btn-restore" onclick="handleAuthClick('download')">🔄 Restore</button>
+        </div>
+
+        <input type="text" class="search-bar" placeholder="Search saved links..." onkeyup="searchLinks(this.value)">
+
+        <div id="linksList">
+            </div>
+    </div>
+
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-top:0">Add New Website</h3>
+            <input type="text" id="linkTitle" placeholder="Website Name (e.g. Facebook)">
+            <input type="url" id="linkUrl" placeholder="https://example.com">
+            <div style="display:flex; gap:10px; margin-top:15px;">
+                <button class="btn btn-primary" style="flex:1" onclick="saveLink()">Save</button>
+                <button class="btn" style="flex:1; background:#ccc" onclick="closeModal('addModal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <h3>App Info ⚙️</h3>
+            <div style="text-align: left; font-size: 0.9rem;">
+                <p><b>Status:</b> Online & Cloud Ready</p>
+                <p><b>Cloud Storage:</b> Google Drive (links_backup.json)</p>
+                <hr>
+                <p>• Data auto-saves to phone.</p>
+                <p>• Use <b>Backup</b> before uninstalling.</p>
+                <p>• Use <b>Restore</b> after reinstalling.</p>
+            </div>
+            <button class="btn btn-primary" style="width:100%; margin-top:15px" onclick="closeModal('settingsModal')">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // --- YOUR CONFIGURATION ---
+        const CLIENT_ID = '798355965858-h9ql808239355n0ca10o4c8quvgjvvfs.apps.googleusercontent.com'; 
+        const API_KEY = 'AIzaSyCpgnHuOYhOlkipDgOrYukKaxdPxJ0FmrM';
+        const DISCOVERY_DOC = "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest";
+        const SCOPES = "https://www.googleapis.com/auth/drive.file";
+
+        let links = JSON.parse(localStorage.getItem('myLinks')) || [
+            {title: 'Google', url: 'https://google.com'},
+            {title: 'YouTube', url: 'https://youtube.com'}
+        ];
+        let tokenClient;
+
+        window.onload = () => {
+            renderLinks(links);
+            if(localStorage.getItem('customWallpaper')) {
+                document.body.style.backgroundImage = `url(${localStorage.getItem('customWallpaper')})`;
+            }
+            // Load GAPI and GIS
+            gapi.load('client', async () => {
+                await gapi.client.init({ apiKey: API_KEY, discoveryDocs: [DISCOVERY_DOC] });
+            });
+            tokenClient = google.accounts.oauth2.initTokenClient({ client_id: CLIENT_ID, scope: SCOPES, callback: '' });
+        };
+
+        function renderLinks(data) {
+            const list = document.getElementById('linksList');
+            list.innerHTML = '';
+            data.forEach((item, index) => {
+                const card = document.createElement('div');
+                card.className = 'link-card';
+                card.innerHTML = `
+                    <div onclick="window.open('${item.url}', '_blank')" style="flex:1; cursor:pointer">
+                        <div style="font-weight:bold">${item.title}</div>
+                        <div style="font-size:0.8rem; opacity:0.6">${item.url}</div>
+                    </div>
+                    <div style="display:flex; gap:15px">
+                        <span onclick="copyLink('${item.url}')" style="cursor:pointer">📋</span>
+                        <span onclick="deleteLink(${index})" style="cursor:pointer">🗑️</span>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        function saveLink() {
+            const title = document.getElementById('linkTitle').value;
+            const url = document.getElementById('linkUrl').value;
+            if(!title || !url) return;
+            links.push({title, url});
+            updateStorage();
+            closeModal('addModal');
+        }
+
+        function deleteLink(i) {
+            if(confirm("Link delete kar dein?")) { links.splice(i, 1); updateStorage(); }
+        }
+
+        function updateStorage() {
+            localStorage.setItem('myLinks', JSON.stringify(links));
+            renderLinks(links);
+        }
+
+        function searchLinks(query) {
+            const filtered = links.filter(l => l.title.toLowerCase().includes(query.toLowerCase()));
+            renderLinks(filtered);
+        }
+
+        function changeWallpaper(e) {
+            const reader = new FileReader();
+            reader.onload = () => {
+                document.body.style.backgroundImage = `url(${reader.result})`;
+                localStorage.setItem('customWallpaper', reader.result);
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        }
+
+        // --- CLOUD SYNC LOGIC ---
+        function handleAuthClick(mode) {
+            tokenClient.callback = async (resp) => {
+                if (resp.error) return;
+                mode === 'upload' ? uploadToDrive() : downloadFromDrive();
+            };
+            tokenClient.requestAccessToken({prompt: 'consent'});
+        }
+
+        async function uploadToDrive() {
+            const metadata = { name: 'links_backup.json', mimeType: 'application/json' };
+            const file = new Blob([JSON.stringify(links)], {type: 'application/json'});
+            const form = new FormData();
+            form.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
+            form.append('file', file);
+
+            fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + gapi.client.getToken().access_token },
+                body: form
+            }).then(() => alert("Cloud Backup Success! ✅")).catch(e => alert("Error: " + e));
+        }
+
+        async function downloadFromDrive() {
+            const response = await gapi.client.drive.files.list({ q: "name='links_backup.json'", fields: 'files(id)' });
+            if (response.result.files.length > 0) {
+                const res = await gapi.client.drive.files.get({ fileId: response.result.files[0].id, alt: 'media' });
+                links = res.result;
+                updateStorage();
+                alert("Data Restored! 🔄");
+            } else { alert("No backup found on Drive."); }
+        }
+
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        function toggleDarkMode() { document.body.classList.toggle('dark-mode'); }
+        function copyLink(url) { navigator.clipboard.writeText(url); alert("Link Copied!"); }
+    </script>
+</body>
+</html>
